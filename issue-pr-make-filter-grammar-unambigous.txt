@@ -1,0 +1,58 @@
+Make filter grammar unambiguous: limit keywords to uppercase, property names to snake-case
+==========================================================================================
+
+The current filter grammar merged in the PR 69 technically works, but
+has IMHO a nunmber of drawbacks:
+
+- The Filter language is longer defined by the EBNF grammar alone;
+  instead it depends in particular conventions used by lexer
+  implementations, such as matching the longest input substring as a
+  next token, and processing reserved kewords before identifiers;
+
+- The parser behaviour now dependes on the order of token definitions;
+
+- We wanted to avoid parsing `NOTa<b` as `NOT ( a < b )`, assuming it
+  shold mean `NOTa < b`, because most current mainstream lexers wold
+  give such behaviour; however, the current grammar still parses the
+  provided string as `NOT ( a < b )`, opening all issues that were
+  raised before for the pre-PR69 grammar. Also, we need to think if we
+  really want interpretation to be `NOTa < b` (i.e. do we really want
+  to have a property named `NOTa`?)
+
+The proposal would be to amend the Filter grammar in the following way:
+
+- all keywords (operators) MUST be in uppercase;
+
+- all property names (variables) MUST be in snake-case, i.e. MUST
+  contain only lowecase letters, underscore and digits, and MUST start
+  with a lowercase letter or an underscore;
+
+- spaces MAY be inserted after word-like tokens like 'HAS', 'STARTS',
+  '>=', '>', '_mp_band_gap'.
+
+The advantages of this change are (numerous, IMHO):
+
+- It codifies the practice that we are currently using (the keywords
+  are already in uppercase only, and all examples of properties were
+  so far provided in snake-case);
+
+- It will make Filter grammar unabiguous, and will allow to define the
+  Filter language formally in the EBNF form alone, without dependence
+  on specific lexer bhaviour;
+
+- The grammar would be easy to transform mecanically into a form
+  without explicit spaces, suitable for current lexers that have
+  capability to ignore white-space while recognising tokens;
+
+- It will guarantee that no keyword introduced by a future extension
+  will ever clash with a property name;
+
+- Filter expressions will be arguably be easier to read by humans;
+  even without knowing what is `NIX` and `los` in a frase `NIX los`,
+  you still know that `NIX` is an operator and `los` is a property
+  name;
+
+- Filters are intended for URL query strings where place is a premium,
+  therefore ability to remove spaces ans still parse the query might
+  be useful;
+
