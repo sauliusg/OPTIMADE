@@ -47,10 +47,9 @@ The advantages of this change are (numerous, IMHO):
 - It will guarantee that no keyword introduced by a future extension
   will ever clash with a property name;
 
-- Filter expressions will be arguably be easier to read by humans;
-  even without knowing what is `NIX` and `los` in a phrase `NIX los`,
-  you still know that `NIX` is an operator and `los` is a property
-  name;
+- Filter expressions will arguably be easier to read by humans; even
+  without knowing what is `NIX` and `los` in a phrase `NIX los`, you
+  still know that `NIX` is an operator and `los` is a property name;
 
 - Filters are intended for URL query strings where place is a premium,
   therefore ability to remove spaces ans still parse the query might
