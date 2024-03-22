@@ -52,7 +52,6 @@ OPTIMADE API specification v1.2.0~develop
                        that is meant to be on form <anything> but is not valid.
 
 .. role:: filter(code)
-   :language: filter
 
 .. role:: filter-fragment(literal)
 
@@ -61,7 +60,6 @@ OPTIMADE API specification v1.2.0~develop
 .. role:: ere(literal)
 
 .. role:: pcre(literal)
-
 
 .. role:: entry(literal)
 
@@ -73,8 +71,6 @@ OPTIMADE API specification v1.2.0~develop
 
 .. role:: property-fail(literal)
 
-
-
 .. role:: endpoint(literal)
 
 .. role:: query-param(literal)
@@ -85,11 +81,9 @@ OPTIMADE API specification v1.2.0~develop
 
 .. role:: query-url(literal)
 
-
 .. role:: http-header(literal)
 
 .. role:: http-error(literal)
-
 
 .. role:: json(code)
    :language: json
@@ -131,7 +125,16 @@ The keywords "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SH
     Every database provider is designated a unique prefix.
     The prefix is used to separate the namespaces used by provider-specific extensions.
     The list of presently defined prefixes is maintained externally from this specification.
-    For more information, see section `Database-Provider-Specific Namespace Prefixes`_.
+    For more information, see section `Namespace Prefixes`_.
+
+**Definition provider**
+    A service that provides one or more external or domain-specific property definitions that can be used by OPTIMADE API implementations.
+
+**Definition provider prefix**
+    Every definition provider is designated a prefix that cannot clash with an existing database provider prefix.
+    The prefix is used to separate the namespaces used by these collections of definitions.
+    The list of presently defined prefixes is maintained externally from this specification.
+    For more information, see section `Namespace Prefixes`_.
 
 **API implementation**
     A realization of the OPTIMADE API that a database provider uses to serve data from one or more databases.
@@ -367,25 +370,54 @@ A few suggestions and mandatory requirements of the OPTIMADE specification are s
 
 ..
 
-    **Note**: A list of database providers acknowledged by the **Open Databases Integration for Materials Design** consortium is maintained externally from this specification and can be retrieved as described in section `Database-Provider-Specific Namespace Prefixes`_.
-    This list is also machine-readable, optimizing the automatic discoverability.
+    **Note**: A list of database and definition providers acknowledged by the **Open Databases Integration for Materials Design** consortium is maintained externally from this specification and can be retrieved as described in section `Namespace Prefixes`_.
+    This list is also machine-readable, enabling the automatic discoverability of OPTIMADE API services.
 
-Database-Provider-Specific Namespace Prefixes
----------------------------------------------
+Namespace Prefixes
+------------------
 
-This standard refers to database-provider-specific prefixes and database providers.
+There are two mechanisms by which a provider can serve properties that are not standardized by the OPTIMADE specification.
 
-A list of known providers and their assigned prefixes is published in the form of an OPTIMADE Index Meta-Database with base URL `https://providers.optimade.org <https://providers.optimade.org>`__.
+1. By serving properties under a database-provider-specific namespace prefix.
+   This is the preferred mechanism for serving properties that are specific to a particular database provider.
+2. By adopting a property definition external to the specification by a definition provider.
+   This is the preferred mechanism in cases where a database-specific field aligns with a field that is already defined by a definition provider, and can be used to enable aggregated filtering over all OPTIMADE APIs that support this property.
+
+A list of known database and definition providers and their assigned prefixes is published in the form of an OPTIMADE Index Meta-Database with base URL `https://providers.optimade.org <https://providers.optimade.org>`__.
 Visiting this URL in a web browser gives a human-readable description of how to retrieve the information in the form of a JSON file, and specifies the procedure for registration of new prefixes.
+A human-readable dashboard is also hosted at `<https://www.optimade.org/providers-dashboard>`__.
 
 API implementations SHOULD NOT make up and use new prefixes without first getting them registered in the official list.
 
 **Examples**:
 
 - A database-provider-specific prefix: ``exmpl``. Used as a field name in a response: :field:`_exmpl_custom_field`.
+- A definition-provider prefix: ``dft``. Used as a field name in a response by multiple different providers: :field:`_dft_cell_volume` (note: this is a hypothetical example).
 
-The initial underscore indicates an identifier that is under a separate namespace under the ownership of that organization.
+The initial underscore indicates an identifier that is under a separate namespace under the ownership of that organization or definition provider.
 Identifiers prefixed with underscores will not be used for standardized names.
+
+Database-Provider-Specific Namespace Prefixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This standard refers to database-provider-specific prefixes and database providers.
+
+Database-provider-specific fields only need to be consistent within the context of one particular database.
+Providers that serve multiple databases MAY use the same provider-specific field names with different meanings in different databases.
+For example, a provider may use the field :field:`_exmpl_band_gap` to mean a computed band gap in one their databases, and a measured band gap in another database.
+
+Database-provider-specific fields SHOULD be fully described at the relevant :endpoint:`/info/<entry_type>` endpoint (see section `Entry Listing Info Endpoints`_)
+
+Definition-Provider-Specific Namespace Prefixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This standard refers to definition-provider-specific prefixes and definition providers.
+
+Definition providers MUST provide a canonical property definition for all custom fields they define using the OPTIMADE `Property Definitions`_ format.
+Definition providers MUST also list these definitions in the relevant :endpoint:`/info/<entry_type>` endpoint of the index meta-database for that provider.
+They MAY also provide human-readable webpages for their definitions.
+
+Definition-provider-specific fields MAY be fully described at the relevant :endpoint:`/info/<entry_type>` endpoint (see section `Entry Listing Info Endpoints`_), but can also rely on the canonical definitions provided by the definition provider, provided they return an ``$id`` for the field that resolves to the relevant OPTIMADE property definition.
 
 URL Encoding
 ------------
@@ -463,35 +495,35 @@ Below follows an example of the :field:`data` and :field:`meta` parts of a respo
 
 .. code:: jsonc
 
-     {
-       // ...
-       "data": {
-         "type": "structures",
-         "id": "2345678",
-         "attributes": {
-             "a": null
-         }
-         "meta": {
-           "partial_data_links": {
-             "a": [
-               {
-                 "format": "jsonlines",
-                 "link": "https://example.org/optimade/v1.2/extensions/partial_data/structures/2345678/a/default_format"
-               },
-               {
-                 "format": "_exmpl_bzip2_jsonlines",
-                 "link": "https://db.example.org/assets/partial_values/structures/2345678/a/bzip2_format"
-               },
-               {
-                 "format": "_exmpl_hdf5",
-                 "link": "https://cloud.example.org/ACCHSORJGIHWOSJZG"
-               }
-             ]
-           }
-         }
-       }
-     // ...
-   }
+    {
+      // ...
+      "data": {
+        "type": "structures",
+        "id": "2345678",
+        "attributes": {
+            "a": null
+        }
+        "meta": {
+          "partial_data_links": {
+            "a": [
+              {
+                "format": "jsonlines",
+                "link": "https://example.org/optimade/v1.2/extensions/partial_data/structures/2345678/a/default_format"
+              },
+              {
+                "format": "_exmpl_bzip2_jsonlines",
+                "link": "https://db.example.org/assets/partial_values/structures/2345678/a/bzip2_format"
+              },
+              {
+                "format": "_exmpl_hdf5",
+                "link": "https://cloud.example.org/ACCHSORJGIHWOSJZG"
+              }
+            ]
+          }
+        }
+      }
+      // ...
+    }
 
 Metadata properties
 -------------------
@@ -549,25 +581,25 @@ Example of a response in the JSON response format with two structure entries tha
 
 Example of the corresponding metadata property definition contained in the field :field:`x-optimade-metadata-definition` which is placed in the property definition of :field:`elements_ratios`:
 
-    .. code:: jsonc
+.. code:: jsonc
 
-         // ...
-         "x-optimade-metadata-definition": {
-           "title": "Metadata for the elements_ratios field",
-           "description": "This field contains the per-entry metadata for the elements_ratios field.",
-           "x-optimade-type": "dictionary",
-           "x-optimade-unit": "inapplicable",
-           "type": ["object", "null"],
-           "properties" : {
-             "_exmpl_originates_from_project": {
-               "$id": "https://properties.example.com/v1.2.0/elements_ratios_meta/_exmpl_originates_from_project",
-               "description" : "A string naming the internal example.com project id where this property was added to the database.",
-               "x-optimade-type": "string",
-               "x-optimade-unit" : "inapplicable"
-             }
-           }
+     // ...
+     "x-optimade-metadata-definition": {
+       "title": "Metadata for the elements_ratios field",
+       "description": "This field contains the per-entry metadata for the elements_ratios field.",
+       "x-optimade-type": "dictionary",
+       "x-optimade-unit": "inapplicable",
+       "type": ["object", "null"],
+       "properties" : {
+         "_exmpl_originates_from_project": {
+           "$id": "https://properties.example.com/v1.2.0/elements_ratios_meta/_exmpl_originates_from_project",
+           "description" : "A string naming the internal example.com project id where this property was added to the database.",
+           "x-optimade-type": "string",
+           "x-optimade-unit" : "inapplicable"
          }
-         // ...
+       }
+     }
+     // ...
 
 Responses
 =========
@@ -582,7 +614,7 @@ Each endpoint MAY support additional formats, and SHOULD declare these formats u
 Clients can request these formats using the :query-param:`response_format` URL query parameter.
 Specifying a :query-param:`response_format` different from :query-val:`json` (e.g. :query-string:`response_format=xml`) allows the API to break conformance not only with the JSON response format specification, but also, e.g., in terms of how content negotiation is implemented.
 
-Database-provider-specific :query-param:`response_format` identifiers MUST include a database-provider-specific prefix (see section `Database-Provider-Specific Namespace Prefixes`_).
+Database-provider-specific and definition-provider-specific :query-param:`response_format` identifiers MUST include the corresponding prefix (see section `Namespace Prefixes`_).
 
 JSON Response Schema: Common Fields
 -----------------------------------
@@ -639,7 +671,8 @@ Every response SHOULD contain the following fields, and MUST contain at least :f
   - **response\_message**: response string from the server.
   - **request\_delay**: a non-negative float giving time in seconds that the client is suggested to wait before issuing a subsequent request.
 
-  Implementation note: the functionality of this field overlaps to some degree with features provided by the HTTP error :http-error:`429 Too Many Requests` and the `Retry-After HTTP header <https://tools.ietf.org/html/rfc7231.html#section-7.1.3>`__. Implementations are suggested to provide consistent handling of request overload through both mechanisms.
+    Implementation note: the functionality of this field overlaps to some degree with features provided by the HTTP error :http-error:`429 Too Many Requests` and the `Retry-After HTTP header <https://tools.ietf.org/html/rfc7231.html#section-7.1.3>`__.
+    Implementations are suggested to provide consistent handling of request overload through both mechanisms.
 
   - **database**: a dictionary describing the specific database accessible at this OPTIMADE API.
     If provided, the dictionary fields SHOULD match those provided in the corresponding links entry for the database in the provider's index meta-database, outlined in `Links Endpoint JSON Response Schema`_.
@@ -871,7 +904,6 @@ An example of a full response:
              }
            }
          },
-         "response_message": "OK"
          // <OPTIONAL implementation- or database-provider-specific metadata, global to the query>
        },
        "data": [
@@ -1108,7 +1140,7 @@ In the default JSON response format every dictionary (`resource object <http://j
 - **id**: field containing the ID of entry as defined in section `Definition of Terms`_. This can be the local database ID.
 - **attributes**: a dictionary, containing key-value pairs representing the entry's properties, except for `type` and `id`.
 
-  Database-provider-specific properties need to include the database-provider-specific prefix (see section `Database-Provider-Specific Namespace Prefixes`_).
+  Database-provider-specific and definition-provider-specific properties MUST include the corresponding prefix (see section `Namespace Prefixes`_).
 
 OPTIONALLY it can also contain the following fields:
 
@@ -1258,12 +1290,17 @@ The single resource object's response dictionary MUST include the following fiel
 
     If this member is *not* provided, the client MUST assume this is **not** an index meta-database base URL (i.e., the default is for :field:`is_index` to be :field-val:`false`).
 
-  - **available\_licenses**: List of `SPDX license identifiers <https://spdx.org/licenses/>` specifying a set of alternative licenses under which the client is granted access to all the data and metadata in this database.
-    If the data and metadata is available under multiple alternative licenses, identifiers of these multiple licenses SHOULD be provided to let clients know under which conditions the data and metadata can be used.
-    Inclusion of a license identifier in the list is a commitment of the database that the rights are in place to grant clients access to all the data and metadata according to the terms of either of these licenses (at the choice of the client).
-    If the licensing information provided via the field :field:`license` omits licensing options specified in :field:`available_licenses`, or if it otherwise contradicts them, a client MUST still be allowed to interpret the inclusion of a license in :field:`available_licenses` as a full commitment from the database that the data and metadata is available, without exceptions, under the respective licenses.
-    If the database cannot make that commitment, e.g., if only part of the data is available under a license, the corresponding license identifier MUST NOT appear in :field:`available_licenses` (but, rather, the field :field:`license` is to be used to clarify the licensing situation.)
-    An empty list indicates that none of the SPDX licenses apply for the entirety of the database and that the licensing situation is clarified in human readable form in the field :field:`license`.
+  - **available\_licenses**: List of `SPDX license identifiers <https://spdx.org/licenses/>`__ specifying a set of alternative licenses available to the client for licensing the complete database, i.e., all the entries, metadata, and the content and structure of the database itself.
+    If more than one license is available to the client, the identifier of each one SHOULD be included in the list.
+    Inclusion of a license identifier in the list is a commitment of the database that the rights are in place to grant clients access to all the individual entries, all metadata, and the content and structure of the database itself according to the terms of any of these licenses (at the choice of the client).
+    If the licensing information provided via the field :field:`license` omits licensing options specified in :field:`available_licenses`, or if it otherwise contradicts them, a client MUST still be allowed to interpret the inclusion of a license in :field:`available_licenses` as a full commitment from the database without exceptions, under the respective licenses.
+    If the database cannot make that commitment, e.g., if only part of the database is available under a license, the corresponding license identifier MUST NOT appear in :field:`available_licenses` (but, rather, the field :field:`license` is to be used to clarify the licensing situation.)
+    An empty list indicates that none of the SPDX licenses apply and that the licensing situation is clarified in human readable form in the field :field:`license`.
+    An unknown value means that the database makes no commitment.
+
+  - **available\_licenses\_for\_entries**: List of `SPDX license identifiers <https://spdx.org/licenses/>`__ specifying a set of additional alternative licenses available to the client for licensing individual, and non-substantial sets of, database entries, metadata, and extracts from the database that do not constitute substantial parts of the database.
+    Note that the definition of the field :field:`available_licenses` implies that licenses specified in that field are available also for the licensing specified by this field, even if they are not explicitly included in the field :field:`available_licenses_for_entries` or if it is :val:`null` (however, the opposite relationship does not hold).
+    If :field:`available_licenses` is unknown, only the licenses in :field:`available_licenses_for_entries` apply.
 
 If this is an index meta-database base URL (see section `Index Meta-Database`_), then the response dictionary MUST also include the field:
 
@@ -1674,7 +1711,7 @@ List of Providers Links
 Resource objects with :property:`link_type` equal to :val:`providers` MUST point to an `Index Meta-Database`_ that supplies a list of OPTIMADE database providers.
 The intention is to be able to auto-discover all providers of OPTIMADE implementations.
 
-A list of known providers can be retrieved as described in section `Database-Provider-Specific Namespace Prefixes`_.
+A list of known database providers can be retrieved as described in section `Namespace Prefixes`_.
 This section also describes where to find information for how a provider can be added to this list.
 
 Index Meta-Database Links Endpoint
@@ -1743,7 +1780,7 @@ The following tokens are used in the filter query component:
   - :property-fail:`"foo bar"` (contains space; contains quotes)
   - :property-fail:`BadLuck` (contains upper-case letters)
 
-  Identifiers that start with an underscore are specific to a database provider, and MUST be on the format of a database-provider-specific prefix (see section `Database-Provider-Specific Namespace Prefixes`_).
+  Identifiers that start with an underscore are specific to a database or definition provider, and MUST be on the format of a namespace prefix (see section `Namespace Prefixes`_).
 
   Examples:
 
@@ -2013,7 +2050,7 @@ Type handling and conversions in comparisons
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The definitions of specific properties in this standard define their types.
-Similarly, for `database-provider-specific properties`_, the database provider decides their types.
+Similarly, for `custom properties`_, the database provider decides their types.
 In the syntactic constructs that can accommodate values of more than one type, types of all participating values are REQUIRED to match, with a single exception of timestamps (see below).
 Different types of values MUST be reported as :http-error:`501 Not Implemented` errors, meaning that type conversion is not implemented in the specification.
 
@@ -2177,15 +2214,15 @@ The format described in this subsection forms a subset of the `JSON Schema Valid
 
 ..
 
-  Implementation notes:
+  **Implementation notes:**
 
-    - The field :field:`type` can be derived from the field :field:`x-optimade-type` and its role is only to provide the JSON type names corresponding to :field:`x-optimade-type`.
-      The motivation to include these type names is that it makes the JSON representation of a Property Definition a fully valid standard JSON Schema.
-      Nevertheless, for consistency across formats, these JSON type names MUST still be included when a property definition is represented in other output formats (i.e., the JSON names MUST NOT be translated into the type names of that output format).
+  - The field :field:`type` can be derived from the field :field:`x-optimade-type` and its role is only to provide the JSON type names corresponding to :field:`x-optimade-type`.
+    The motivation to include these type names is that it makes the JSON representation of a Property Definition a fully valid standard JSON Schema.
+    Nevertheless, for consistency across formats, these JSON type names MUST still be included when a property definition is represented in other output formats (i.e., the JSON names MUST NOT be translated into the type names of that output format).
 
-    - The allowed values of the :field:`type` field are highly restricted compared to what is permitted using the full JSON Schema standard.
-      Values can only be defined to be a single OPTIMADE data type or, optionally, :val:`null`.
-      This restriction is intended to reduce the complexity of possible data types that implementations have to handle in different formats and database backends.
+  - The allowed values of the :field:`type` field are highly restricted compared to what is permitted using the full JSON Schema standard.
+    Values can only be defined to be a single OPTIMADE data type or, optionally, :val:`null`.
+    This restriction is intended to reduce the complexity of possible data types that implementations have to handle in different formats and database backends.
 
 **OPTIONAL keys**
 
@@ -2501,11 +2538,11 @@ last\_modified
 
   - As part of JSON response format: :VAL:`"2007-04-05T14:30:20Z"` (i.e., encoded as an `RFC 3339 Internet Date/Time Format <https://tools.ietf.org/html/rfc3339#section-5.6>`__ string.)
 
-database-provider-specific properties
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Custom properties
+~~~~~~~~~~~~~~~~~
 
-- **Description**: Database providers are allowed to add database-provider-specific properties in the output of both standard entry types and database-provider-specific entry types.
-  Similarly, an implementation MAY add keys with a database-provider-specific prefix to dictionary properties and their sub-dictionaries.
+- **Description**: Providers are able to add database-provider-specific and definition-provider-specific properties in the output of both standard entry types and custom entry types.
+  Similarly, an implementation MAY add keys with a namespace prefix to dictionary properties and their sub-dictionaries.
   For example, the database-provider-specific property :property:`_exmpl_oxidation_state`, can be placed within the OPTIMADE property :property:`species`.
 
 - **Type**: Decided by the API implementation.
@@ -2518,10 +2555,10 @@ database-provider-specific properties
   - **Response**: API implementations are free to choose whether database-provider-specific properties are only included when requested using the query parameter :query-param:`response_fields`, or if they are included also when :query-param:`response_fields` is not present.
     Implementations are thus allowed to decide that some of these properties are part of what can be seen as the default value of :query-param:`response_fields` when that query parameter is omitted.
     Implementations SHOULD NOT include database-provider-specific properties when the query parameter :query-param:`response_fields` is present but does not list them.
-  - These MUST be prefixed by a database-provider-specific prefix (see appendix `Database-Provider-Specific Namespace Prefixes`_).
+  - These MUST be prefixed by a database-provider-specific prefix (see appendix `Namespace Prefixes`_).
   - Implementations MUST add the properties to the list of :property:`properties` under the respective entry listing :endpoint:`info` endpoint (see `Entry Listing Info Endpoints`_).
 
-- **Examples**: A few examples of valid database-provided-specific property names follows:
+- **Examples**: A few examples of valid database-provided-specific property names, for a predefined prefix `_exmpl`, are as follows:
 
   - :property:`_exmpl_formula_sum`
   - :property:`_exmpl_band_gap`
@@ -3358,7 +3395,7 @@ checksums
   - **Support**: OPTIONAL support in implementations, i.e., MAY be :val:`null`.
   - **Query**: Support for queries on this property is OPTIONAL.
   - Supported dictionary keys: :property:`md5`, :property:`sha1`, :property:`sha224`, :property:`sha256`, :property:`sha384`, :property:`sha512`.
-    Checksums outside this list MAY be used, but their names MUST be prefixed by database-provider-specific namespace prefix (see appendix `Database-Provider-Specific Namespace Prefixes`_).
+    Checksums outside this list MAY be used, but their names MUST be prefixed by a database-provider-specific namespace prefix (see appendix `Namespace Prefixes`_).
 
 atime
 ~~~~~
@@ -3393,15 +3430,16 @@ mtime
     :field:`last_modified` pertains to the modification of the OPTIMADE metadata, :field:`modification_timestamp` pertains to file contents and :field:`mtime` pertains to the modification of the file (not necessary changing its contents).
     For example, appending an empty string to a file would result in the change of :field:`mtime` in some operating systems, but this would not be deemed as a modification of its contents.
 
-Database-Provider-Specific Entry Types
---------------------------------------
+Custom Entry Types
+------------------
 
-Names of database-provider-specific entry types MUST start with database-provider-specific namespace prefix (see appendix `Database-Provider-Specific Namespace Prefixes`_).
-Database-provider-specific entry types MUST have all properties described above in section `Properties Used by Multiple Entry Types`_.
+Database and definition providers can define custom entry types.
+The names of such entry types MUST start with corresponding namespace prefix (see appendix `Namespace Prefixes`_).
+Custom entry types MUST have all properties described above in section `Properties Used by Multiple Entry Types`_.
 
-- **Requirements/Conventions for properties in database-provider-specific entry types**:
+- **Requirements/Conventions for properties in custom entry types**:
 
-  - **Support**: Support for any properties in database-provider-specific entry types is fully OPTIONAL.
+  - **Support**: Support for any properties in database-provider-specific or definition-provider-specific entry types is fully OPTIONAL.
   - **Query**: Support for queries on these properties are OPTIONAL.
     If supported, only a subset of the filter features MAY be supported.
 
@@ -3913,57 +3951,57 @@ Examples
 Below follows an example of a dense response for a partial array data of integer values.
 The request returns the first three items and provides the next-marker link to continue fetching data:
 
-.. code:: json
+.. code:: jsonl
 
-    {"optimade-partial-data": {"format": "1.2.0"}, "layout": "dense", "returned_ranges": [{"start": 10, "stop": 20, "step": 2}]}
-    123
-    345
-    -12.6
-    ["PARTIAL-DATA-NEXT", ["https://example.db.org/value4"]]
+   {"optimade-partial-data": {"format": "1.2.0"}, "layout": "dense", "returned_ranges": [{"start": 10, "stop": 20, "step": 2}]}
+   123
+   345
+   -12.6
+   ["PARTIAL-DATA-NEXT", ["https://example.db.org/value4"]]
 
 Below follows an example of a dense response for a list property as a partial array of multidimensional array values.
 The item with index 10 in the original list is provided explicitly in the response and is the first one provided in the response since start=10.
 The item with index 12 in the list, the second data item provided since start=10 and step=2, is not included only referenced.
 The third provided item (index 14 in the original list) is only partially returned: it is a list of three items, the first and last are explicitly provided, the second one is only referenced.
 
-.. code:: json
+.. code:: jsonl
 
-    {"optimade-partial-data": {"format": "1.2.0"}, "layout": "dense", "returned_ranges": [{"start": 10, "stop": 20, "step": 2}]}
-    [[10,20,21], [30,40,50]]
-    ["PARTIAL-DATA-REF", ["https://example.db.org/value2"]]
-    [[11, 110], ["PARTIAL-DATA-REF", ["https://example.db.org/value3"]], [550, 333]]
-    ["PARTIAL-DATA-NEXT", ["https://example.db.org/value4"]]
+   {"optimade-partial-data": {"format": "1.2.0"}, "layout": "dense", "returned_ranges": [{"start": 10, "stop": 20, "step": 2}]}
+   [[10,20,21], [30,40,50]]
+   ["PARTIAL-DATA-REF", ["https://example.db.org/value2"]]
+   [[11, 110], ["PARTIAL-DATA-REF", ["https://example.db.org/value3"]], [550, 333]]
+   ["PARTIAL-DATA-NEXT", ["https://example.db.org/value4"]]
 
 Below follows an example of the sparse layout for multidimensional lists with three aggregated dimensions.
 The underlying property value can be taken to be sparse data in lists in four dimensions of 10000 x 10000 x 10000 x N, where the innermost list is a non-sparse list of arbitrary length of numbers.
 The only non-null items in the outer three dimensions are, say, [3,5,19], [30,15,9], and [42,54,17].
 The response below communicates the first item explicitly; the second one by deferring the innermost list using a reference-marker; and the third item is not included in this response, but deferred to another page via a next-marker.
 
-.. code:: json
+.. code:: jsonl
 
-    {"optimade-partial-data": {"format": "1.2.0"}, "layout": "sparse"}
-    [3,5,19,  [10,20,21,30]]
-    [30,15,9, ["PARTIAL-DATA-REF", ["https://example.db.org/value1"]]]
-    ["PARTIAL-DATA-NEXT", ["https://example.db.org/"]]
+   {"optimade-partial-data": {"format": "1.2.0"}, "layout": "sparse"}
+   [3,5,19,  [10,20,21,30]]
+   [30,15,9, ["PARTIAL-DATA-REF", ["https://example.db.org/value1"]]]
+   ["PARTIAL-DATA-NEXT", ["https://example.db.org/"]]
 
 An example of the sparse layout for multidimensional lists with three aggregated dimensions and integer values:
 
-.. code:: json
+.. code:: jsonl
 
-    {"optimade-partial-data": {"format": "1.2.0"}, "layout": "sparse"}
-    [3,5,19,  10]
-    [30,15,9, 31]
-    ["PARTIAL-DATA-NEXT", ["https://example.db.org/"]]
+   {"optimade-partial-data": {"format": "1.2.0"}, "layout": "sparse"}
+   [3,5,19,  10]
+   [30,15,9, 31]
+   ["PARTIAL-DATA-NEXT", ["https://example.db.org/"]]
 
 An example of the sparse layout for multidimensional lists with three aggregated dimensions and values that are multidimensional lists of integers of arbitrary lengths:
 
-.. code:: json
+.. code:: jsonl
 
-    {"optimade-partial-data": {"format": "1.2.0"}, "layout": "sparse"}
-    [3,5,19, [ [10,20,21], [30,40,50] ] ]
-    [3,7,19, ["PARTIAL-DATA-REF", ["https://example.db.org/value2"]]]
-    [4,5,19, [ [11, 110], ["PARTIAL-DATA-REF", ["https://example.db.org/value3"]], [550, 333]]]
-    ["PARTIAL-DATA-END", [""]]
+   {"optimade-partial-data": {"format": "1.2.0"}, "layout": "sparse"}
+   [3,5,19, [ [10,20,21], [30,40,50] ] ]
+   [3,7,19, ["PARTIAL-DATA-REF", ["https://example.db.org/value2"]]]
+   [4,5,19, [ [11, 110], ["PARTIAL-DATA-REF", ["https://example.db.org/value3"]], [550, 333]]]
+   ["PARTIAL-DATA-END", [""]]
 
 OPTIMADE Regular Expression Format
 ----------------------------------
@@ -3976,61 +4014,60 @@ Such delimiters and escape rules are *not* included in the definition of the OPT
 The format defined in this section applies after such outer escape rules have been applied (e.g., when all occurrences of ``\/`` have been translated into ``/`` for a format where an unescaped slash character is the end delimiter).
 Likewise, if an OPTIMADE regex is embedded in a serialized data format (e.g., JSON), this section documents the format of the Unicode string resulting from the deserialization of that format.
 
-The format is a subset of the format described in `ECMA-262, section 21.2.1 <https://262.ecma-international.org/11.0/#sec-patterns>`__.
-The format is closely inspired by the subset recommended in the JSON Schema standard, see `JSON Schema: A Media Type for Describing JSON Documents 2020-12, section 6.4 <https://json-schema.org/draft/2020-12/json-schema-core#section-6.4>`__.
-However, OPTIMADE has decided to restrict the subset further to better align it with the features available in common database backends and to clarify the limitations of character classes and character escapes.
-The intent is that the specified format is also a subset of the `PCRE2 regex format <https://www.pcre.org/current/doc/html/>`__ to make the format directly useful (without translation) in a wide range of regex implementations.
+An OPTIMADE regex is a regular expression that adheres to `ECMA-262, section 21.2.1 <https://262.ecma-international.org/11.0/#sec-patterns>`__ with additional restrictions described below which define a subset of the ECMA-262 format chosen to match features commonly available in different database backends.
+The regex is interpreted according to the ECMA-262 processing rules that apply for an expression where only the Unicode variable is set to true of all variables set by the RegExp internal slot described by `ECMA-262, section 21.2.2.1 <https://262.ecma-international.org/11.0/#sec-notation>`__.
 
-Hence, an OPTIMADE regex is a regular expression that adheres to `ECMA-262, section 21.2.1 <https://262.ecma-international.org/11.0/#sec-patterns>`__ with the additional restrictions described in the following.
-The regex is interpreted according to the processing rules that apply for an expression where only the Unicode variable is set to true of all variables set by the RegExp internal slot described by `ECMA-262, section 21.2.2.1 <https://262.ecma-international.org/11.0/#sec-notation>`__.
-Furthermore, it can only use the following tokens and features (this list is partially quoted from the JSON Schema standard):
+The subset includes only the following tokens and features:
 
 - Individual Unicode characters matching themselves, as defined by the `JSON specification <https://json-schema.org/draft/2020-12/json-schema-core#RFC8259>`__.
 - The ``.`` character to match any one Unicode character except the line break characters LINE FEED (LF) (U+000A), CARRAGE RETURN (U+000D), LINE SEPARATOR (U+2028), PARAGRAPH SEPARATOR (U+2029) (see `ECMA-262 section 2.2.2.7 <https://262.ecma-international.org/14.0/?_gl=1*yqtzjq*_ga*MjEzNTE2ODEyNi4xNzA0NTQ1NTk5*_ga_TDCK4DWEPP*MTcwNzk5ODA1My43LjEuMTcwNzk5OTYxNC4wLjAuMA..#sec-compileatom>`__).
-- A literal escape of one of the syntax characters, i.e., the escape character (``\``) followed by one of the following characters ``^ $ \ . * + ? ( ) [ ] { } |`` to represent that literal character.
+- A literal escape of `one of the characters defined as syntax characters in the ECMA-262 standard <https://262.ecma-international.org/11.0/#prod-SyntaxCharacter>`__, i.e., the escape character (``\``) followed by one of the following characters ``^ $ \ . * + ? ( ) [ ] { } |`` to represent that literal character.
   No other characters can be escaped.
   (This rule prevents other escapes that are interpreted differently depending on regex flavor.)
-- Simple character classes (e.g., ``[abc]``) and range character classes (e.g., ``[a-z]``) with the following constraints:
+- Simple character classes (e.g., ``[abc]``), complemented character classes (e.g. ``[^abc]``), and their ranged versions (e.g., ``[a-z]``, ``[^a-z]``) with the following constraints:
 
-  * The character ``-`` designates ranges unless it is the first or last character of the class.
-  * The characters ``\ [ ]`` can only appear escaped with a preceeding backslash, e.g. ``\\`` designates that the class includes a literal ``\`` character.
+  * The character ``-`` designates ranges, unless it is the first or last character of the class in which case it represents a literal ``-`` character.
+  * If the first character is ``^`` then the expression matches all characters *except* the ones specified by the class as defined by the characters that follows.
+  * The characters ``\ [ ]`` can only appear escaped with a preceding backslash, e.g. ``\\`` designates that the class includes a literal ``\`` character.
     The other syntax characters may appear either escaped or unescaped to designate that the class includes them.
     (This rule prevents other escapes inside classes that are not the same across regex flavors and expressions that, in some flavors, are interpreted as nested classes.)
-  * Except for as specified above, all characters represent themselves literally (including syntax characters).
-  * Each literal character can appear in the class at most once.
-    (This rule prevents expressions interpreted as pre-defined classes in some regex flavors, e.g., ``[:alpha:]``).
-
-- Complemented character classes (e.g., ``[^abc]``, ``[^a-z]``).
+  * Except as specified above, all characters represent themselves literally (including syntax characters).
+  * Characters that represent themselves literally can only appear at most once.
+    (This rule prevents various kinds of extended character class syntax that differs between regex formats that assigns special meaning to duplicated characters such as POSIX character classes, e.g., ``[:alpha:]``, equivalence classes, e.g., ``[=a=]``, set constructs, e.g. ``[A--B]``, ``[A&&B]``, etc.).
 - Simple quantifiers: ``+`` (one or more), ``*`` (zero or more), ``?`` (zero or one) that appear directly after a character, group, or character class.
-  (This rule prevents expressions with special meaning in some regex flavors, e.g., ``+?`` and ``(?`` ).)
+  (This rule prevents expressions with special meaning in some regex flavors, e.g., ``+?`` and ``(?...)``.)
 - The beginning-of-input (``^``) and end-of-input (``$``) anchors.
 - Simple grouping (``(...)``) and alternation (``|``).
 
-Note that compared to the JSON Schema standard, lazy quantifiers (``+?``, ``*?``, ``??``) are *not* included, nor are range quantifiers (``{x}``, ``{x,y}``, ``{x,}``).
+Note that lazy quantifiers (``+?``, ``*?``, ``??``) are *not* included, nor are range quantifiers (``{x}``, ``{x,y}``, ``{x,}``).
 Furthermore, there is no support for escapes designating shorthand character classes as ``\`` and a letter or number, nor is there any way to represent a Unicode character by specifying a code point as a number, only via the Unicode character itself.
 (However, the regex can be embedded in a context that defines such escapes, e.g., in serialized JSON a string containing the character ``\u`` followed by four hexadecimal digits is deserialized into the corresponding Unicode character.)
 
 An OPTIMADE regex matches the string at any position unless it contains a leading beginning-of-input (``^``) or trailing end-of-input (``$``) anchor listed above, i.e., the anchors are not implicitly assumed.
 For example, the OPTIMADE regex "es" matches "expression".
 
-Regexes that utilize tokes and features beyond the designated subset are allowed to have an undefined behavior, i.e., they MAY match or not match *any* string or MAY produce an error.
+Regexes that utilize tokens and features beyond the designated subset are allowed to have an undefined behavior, i.e., they MAY match or not match *any* string or MAY produce an error.
 Implementations that do not produce errors in this situation are RECOMMENDED to generate warnings if possible.
 
   Compatibility notes:
 
-  The definition tolerates (with undefined behavior) regexes that use tokens and features beyond the defined subset.
-  Hence, a regex can be directly handed over to a backend implementation compatible with the subset without needing validation or translation.
-  Additional consideration of how the ``.`` character operates in relation to line breaks may be required for multiline text.
-  If the regex is applied to strings containing only the LINE FEED (U+000A) character and none of the other Unicode line break characters, most regex backend implementations are compatible with the defined behavior.
-  If the regex is applied to string data containing arbitrary combinations of line break characters and the right behavior cannot be achieved via environmental settings and regex options, implementations can consider a translation step where other line break characters are translated into LINE FEED in the text operated on.
+  * The subset is intended to be compatible with, but even further restricted than, the subset recommended in the JSON Schema standard, see `JSON Schema: A Media Type for Describing JSON Documents 2020-12, section 6.4 <https://json-schema.org/draft/2020-12/json-schema-core#section-6.4>`__.
+    The compatibility with the JSON Schema standard is expressed here as "intended" since there is some room for interpretation of the precise features included in the recommendation given in that standard.
 
-  Compatibility with different regex implementations may change depending on the environment, language versions, and options and has to be verified by implementations.
-  However, as a general guide, we have used third-party sources, e.g., the `Regular Expression Engine Comparison Chart <https://gist.github.com/CMCDragonkai/6c933f4a7d713ef712145c5eb94a1816>`__ to collect the following information for compatibility when operating on text using LINE FEED as the line break character:
+  * The definition tolerates (with undefined behavior) regexes that use tokens and features beyond the defined subset.
+    Hence, a regex can be directly handed over to a backend implementation compatible with the subset without needing validation or translation.
 
-  * `ECMAScript (also known as javascript) <https://262.ecma-international.org/>`__ and version 1 and 2 of `PCRE <https://www.pcre.org/>`__ are meant to be compatible by design.
+  * Additional consideration of how the ``.`` character operates in relation to line breaks may be required for multiline text.
+    If the regex is applied to strings containing only the LINE FEED (U+000A) character and none of the other Unicode line break characters, most regex backend implementations are compatible with the defined behavior.
+    If the regex is applied to string data containing arbitrary combinations of Unicode line break characters and the right behavior cannot be achieved via environmental settings and regex options, implementations can consider a translation step where other line break characters are translated into LINE FEED in the text operated on.
 
-  * The following regex formats appear generally compatible when operating in Unicode mode: `Perl <https://perldoc.perl.org/perlre>`__, `Python <https://docs.python.org/3/library/re.html>`__, `Ruby <https://ruby-doc.org/3.2.2/Regexp.html>`__, `Rust <https://docs.rs/regex/latest/regex/>`__, `Java <https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html>`__, `.NET <https://learn.microsoft.com/en-us/dotnet/standard/base-types/details-of-regular-expression-behavior>`__, `MySQL 8 <https://dev.mysql.com/doc/refman/8.0/en/regexp.html>`__, `MongoDB <https://www.mongodb.com/docs/manual/reference/operator/query/regex/>`__, `Oracle <https://docs.oracle.com/cd/B13789_01/appdev.101/b10795/adfns_re.htm>`__, `IBM Db2 <https://www.ibm.com/docs/en/db2/11.5?topic=reference-regular-expressions>`__, `Elasticsearch <https://www.elastic.co/guide/en/elasticsearch/reference/current/regexp-syntax.html>`__, `DuckDB <https://duckdb.org/docs/sql/functions/patternmatching.html#regular-expressions>`__ (which uses the `re2 <https://github.com/google/re2/wiki/Syntax>`__ library).
-  * SQLite supports regexes via libraries and thus can use a compatible format (e.g., PCRE2).
-  * XML Schema appears to use a compatible regex format, except it is implicitly anchored: i.e., the beginning-of-input ``^`` and end-of-input ``$`` anchors must be removed, and missing anchors replaced by ``.*``.
-  * POSIX Extended regexes (and their extended GNU implementations) are incompatible because ``\`` is not a special character in character classes.
-    POSIX Basic regexes also have further differences, e.g., the meaning of some escaped syntax characters is reversed.
+  * Compatibility with different regex implementations may change depending on the environment, implementation programming language versions, and options and has to be verified by implementations.
+    However, as a general guide, we have used third-party sources, e.g., the `Regular Expression Engine Comparison Chart <https://gist.github.com/CMCDragonkai/6c933f4a7d713ef712145c5eb94a1816>`__ to collect the following information for compatibility when operating on text using LINE FEED as the line break character:
+
+      * `ECMAScript (also known as javascript) <https://262.ecma-international.org/>`__ and version 1 and 2 of `PCRE <https://www.pcre.org/>`__ are meant to be compatible by design when used with appropriate options.
+
+      * The following regex formats appear generally compatible when operating in Unicode mode: `Perl <https://perldoc.perl.org/perlre>`__, `Python <https://docs.python.org/3/library/re.html>`__, `Ruby <https://ruby-doc.org/3.2.2/Regexp.html>`__, `Rust <https://docs.rs/regex/latest/regex/>`__, `Java <https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html>`__, `.NET <https://learn.microsoft.com/en-us/dotnet/standard/base-types/details-of-regular-expression-behavior>`__, `MySQL 8 <https://dev.mysql.com/doc/refman/8.0/en/regexp.html>`__, `MongoDB <https://www.mongodb.com/docs/manual/reference/operator/query/regex/>`__, `Oracle <https://docs.oracle.com/cd/B13789_01/appdev.101/b10795/adfns_re.htm>`__, `IBM Db2 <https://www.ibm.com/docs/en/db2/11.5?topic=reference-regular-expressions>`__, `Elasticsearch <https://www.elastic.co/guide/en/elasticsearch/reference/current/regexp-syntax.html>`__, `DuckDB <https://duckdb.org/docs/sql/functions/patternmatching.html#regular-expressions>`__ (which uses the `re2 <https://github.com/google/re2/wiki/Syntax>`__ library).
+      * SQLite supports regexes via libraries and thus can use a compatible format (e.g., PCRE2).
+      * XML Schema appears to use a compatible regex format, except it is implicitly anchored: i.e., the beginning-of-input ``^`` and end-of-input ``$`` anchors must be removed, and missing anchors replaced by ``.*``.
+      * POSIX Extended regexes (and their extended GNU implementations) are incompatible because ``\`` is not a special character in character classes.
+        POSIX Basic regexes also have further differences, e.g., the meaning of some escaped syntax characters is reversed.
